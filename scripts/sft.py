@@ -146,6 +146,9 @@ def main(argv: list[str] | None = None) -> int:
     ckpt = torch.load(base_path, map_location=device, weights_only=False)
     base_model_cfg = ModelConfig(**ckpt["config"]["model"])
     base_model_cfg.vocab_size = tok.vocab_size
+    # Make the SFT config record the *actual* architecture being trained, so the
+    # SFT checkpoint/snapshot can be rebuilt later by eval/generate/gradio.
+    cfg.model = base_model_cfg
     model = build_model(base_model_cfg).to(device)
     model.load_state_dict(ckpt["model"])
     print(f"loaded base model from {base_path} "
