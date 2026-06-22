@@ -87,6 +87,9 @@ class ModelConfig:
     rms_norm_eps: float = 1e-5
     attn_bias: bool = False          # LLaMA-style: no biases in linear layers
     mlp_bias: bool = False
+    # attention backend: "auto" -> fused SDPA if available, else "manual".
+    # "manual" forces the explicit masked-softmax path (used by the mask test).
+    attn_impl: str = "auto"          # "auto" | "sdpa" | "manual"
     tie_embeddings: bool = True      # share input embedding with output projection
     init_std: float = 0.02           # GPT-2-style normal init std
 
