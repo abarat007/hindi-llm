@@ -1,0 +1,90 @@
+# Hindi ~50M GPT — reference configuration.
+#
+# This file holds OVERRIDES merged on top of the dataclass defaults in
+# src/hindi_llm/config.py. Anything omitted falls back to those defaults.
+# Loaded via: Config.from_yaml("configs/hindi_50m.yaml").
+#
+# Parameter count for the model block below: ~48.5M total (~32.1M non-embedding).
+# Verify with:  python -m hindi_llm.config
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  cleaned_jsonl: data/processed/clean.jsonl
+  cleaned_txt: data/processed/clean.txt
+  train_bin: data/processed/train.bin
+  val_bin: data/processed/val.bin
+  text_field: text
+  val_fraction: 0.0005          # ~0.05% of tokens held out for validation
+
+tokenizer:
+  path: tokenizer/hindi_bpe.json
+  vocab_size: 32000             # see docs/tokenizer_notes.md for the tradeoff
+  min_frequency: 2
+
+model:
+  context_length: 1024          # 512 trains faster; 1024 captures longer context
+  d_model: 512
+  n_layers: 10
+  n_heads: 8                    # head_dim = 512 / 8 = 64
+  mlp_ratio: 2.6667             # 8/3; SwiGLU hidden -> 1408 (rounded to /128)
+  mlp_multiple_of: 128
+  dropout: 0.0
+  rope_theta: 10000.0
+  tie_embeddings: true
+
+optim:
+  lr: 3.0e-4                    # peak LR after warmup
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+
+scheduler:
+  warmup_steps: 200
+  lr_decay_steps: null          # null -> use train.max_steps
+  min_lr: 3.0e-5                # ~10% of peak
+
+train:
+  batch_size: 32                # sequences per forward (lower if you OOM)
+  grad_accum_steps: 8           # effective batch = 32 * 8 = 256 sequences
+  max_steps: 20000              # ~256 * 1024 * 20000 ≈ 5.2B tokens seen
+  eval_interval: 500
+  eval_iters: 100
+  log_interval: 10
+  sample_interval: 1000
+  seed: 1337
+  device: auto                  # auto-detect cuda / mps / cpu
+  dtype: auto                   # bf16 on capable GPUs, else fp32
+  compile: false
+
+checkpoint:
+  out_dir: checkpoints/base
+  save_interval: 1000
+  keep_best: true
+  resume: false
+
+logging:
+  wandb_enabled: false          # set true (and `pip install wandb`) to log
+  wandb_project: hindi-llm
+  metrics_jsonl: outputs/metrics.jsonl
+
+sft:
+  data_path: data/sample_sft.jsonl
+  base_checkpoint: checkpoints/base/best.pt
+  out_dir: checkpoints/sft
+  epochs: 3
+  lr: 1.0e-5
+  batch_size: 8
+  warmup_steps: 20
+  max_seq_len: 1024
+  mask_prompt: true             # train loss only on assistant tokens
+
+eval:
+  base_checkpoint: checkpoints/base/best.pt
+  sft_checkpoint: checkpoints/sft/best.pt
+  out_markdown: outputs/eval_report.md
+  max_new_tokens: 128
+  temperature: 0.8
+  top_k: 40
+  top_p: 0.95
