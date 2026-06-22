@@ -82,7 +82,13 @@ def generate(
             if top_p:
                 logits = top_p_filter(logits, top_p)
             probs = F.softmax(logits, dim=-1)              # [B, V]
-            next_tok = torch.multinomial(probs, 1, generator=generator)  # [B, 1]
+            # multinomial requires the generator to live on the same device as
+            # probs; if a mismatched (e.g. CPU) generator was passed, fall back
+            # to the global RNG (still reproducible when the seed was set).
+            if generator is not None and generator.device.type == probs.device.type:
+                next_tok = torch.multinomial(probs, 1, generator=generator)  # [B, 1]
+            else:
+                next_tok = torch.multinomial(probs, 1)     # [B, 1]
 
         if eos_id is not None:
             # rows already finished keep emitting eos (stay benign)

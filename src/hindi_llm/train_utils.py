@@ -31,6 +31,21 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def make_generator(device: str, seed: int) -> "torch.Generator | None":
+    """A seeded RNG on the given device for reproducible sampling.
+
+    Also seeds the global RNG so that, if the device-specific generator cannot be
+    created (some backends), sampling still falls back to a seeded global RNG.
+    """
+    torch.manual_seed(seed)
+    try:
+        g = torch.Generator(device=device)
+        g.manual_seed(seed)
+        return g
+    except (RuntimeError, TypeError):
+        return None
+
+
 def resolve_device(pref: str = "auto") -> str:
     if pref != "auto":
         return pref
