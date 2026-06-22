@@ -1,0 +1,39 @@
+[project]
+name = "hindi-llm"
+version = "0.1.0"
+description = "A small Hindi causal language model trained from scratch in PyTorch, nanoGPT-style."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Abhinabha Barat" }]
+keywords = ["hindi", "llm", "language-model", "pytorch", "nanogpt", "low-resource-nlp"]
+
+# Core dependencies. Deliberately small: no HuggingFace Trainer, no nn.Transformer,
+# no high-level training wrappers. We build the training stack ourselves.
+dependencies = [
+    "torch>=2.1",
+    "tokenizers>=0.15",
+    "numpy>=1.24",
+    "tqdm>=4.65",
+    "regex>=2023.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Experiment tracking. Optional so the core pipeline runs offline.
+logging = ["wandb>=0.16"]
+# Interactive demo only.
+demo = ["gradio>=4.0"]
+# Developer tooling.
+dev = ["pytest>=7.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hindi_llm"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
